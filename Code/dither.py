@@ -1,9 +1,8 @@
-
-def dither(i, j, image_map, quant_func, size):
-    w, h = size
+def dither(i, j, image_map, quant_func, info):
+    w, h, channels = info
 
     # quantize and assign
-    r, g, b = image_map[i, j]
+    r, g, b = image_map[i, j][:3]
     qr, qg, qb = quant_func(r), quant_func(g), quant_func(b)
     image_map[i, j] = qr, qg, qb
 

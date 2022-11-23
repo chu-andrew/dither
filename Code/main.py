@@ -1,6 +1,6 @@
-from math import log
-
+import numpy
 from PIL import Image
+from math import log
 from tqdm import tqdm
 import click
 
@@ -8,11 +8,9 @@ from dither import dither
 
 
 @click.command()
-@click.argument('image_file',
-                type=click.Path(exists=True, dir_okay=False, readable=True))
+@click.argument('image_file', type=click.Path(exists=True, dir_okay=False, readable=True))
 @click.argument('bits', default=1)
-@click.option('--uniform', 'quantize_method', flag_value='uniform',
-              default=True)
+@click.option('--uniform', 'quantize_method', flag_value='uniform', default=True)
 @click.option('--median_cut', 'quantize_method', flag_value='median_cut')
 @click.option('--gray', is_flag=True, default=False, help='convert image to grayscale before processing')
 def main(image_file, bits, quantize_method, gray):
@@ -22,6 +20,7 @@ def main(image_file, bits, quantize_method, gray):
     # initialize images and maps
     input_image = Image.open(image_file)
     width, height = input_image.size
+    channels = len(input_image.getbands())
 
     quantized_image = input_image.copy()
     dithered_image = input_image.copy()
@@ -34,15 +33,21 @@ def main(image_file, bits, quantize_method, gray):
     # process images: Floyd-Steinberg dithering
     for j in tqdm(range(height)):
         for i in range(width):
+
             # populate a quantized map
             if quantized_map[i, j] is not None:
-                r, g, b = quantized_map[i, j]
+                if channels > 3:
+                    r, g, b, *_ = quantized_map[i, j]
+                else:
+                    r, g, b     = quantized_map[i, j]
                 quantized_map[i, j] = quantize(r), quantize(g), quantize(b)
 
-            # populate a dithered map
-            dithered_map = dither(i, j, dithered_map, quantize, (width, height))
+            # populate dithered map
+            dithered_map = dither(i, j, dithered_map, quantize, (width, height, channels))
 
     # save images and output stats
+    # TODO https://stackoverflow.com/questions/73242236/image-colors-changed-after-saving-with-pil
+    # https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html
     ext = "." + image_file.split('.')[-1]
     stem = str(image_file.replace(ext, ""))
     new_file = f"{stem}_" \
