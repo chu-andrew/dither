@@ -10,11 +10,11 @@ from median_cut import palette
 
 @click.command()
 @click.argument('image_file', type=click.Path(exists=True, dir_okay=False, readable=True))
-@click.argument('bits', default=1)
+@click.argument('tones', default=1)
 @click.option('--uniform', 'quantize_method', flag_value='uniform', default=True)
 @click.option('--median_cut', 'quantize_method', flag_value='median_cut')
 @click.option('--gray', is_flag=True, default=False, help='convert image to grayscale before processing')
-def main(image_file, bits, quantize_method, gray):
+def main(image_file, tones, quantize_method, gray):
     # initialize images and maps
     input_image = Image.open(image_file)
     width, height = input_image.size
@@ -31,9 +31,9 @@ def main(image_file, bits, quantize_method, gray):
 
     # choose quantization method
     try:
-        quantize = choose_quantization_method(quantize_method, bits, input_image, gray)
+        quantize = choose_quantization_method(quantize_method, tones, input_image, gray)
     except ValueError:
-        print("Please enter a valid number of color levels.")
+        print("Please enter a valid number of tones.")
         return
 
     # process images: Floyd-Steinberg dithering
@@ -42,7 +42,8 @@ def main(image_file, bits, quantize_method, gray):
 
             if quantized_map[i, j] is not None:
                 r, g, b = quantized_map[i, j][:3]
-                quantized_map[i, j] = quantize(r, g, b)
+                qr, qg, qb = quantize(r, g, b)
+                quantized_map[i, j] = qr, qg, qb
 
             # populate dithered map
             dithered_map = dither(i, j, dithered_map, quantize, (width, height, channels))
@@ -53,7 +54,7 @@ def main(image_file, bits, quantize_method, gray):
     stem = get_path(image_file)
     new_file =  f"{stem}_" \
                 f"{'gray_' if gray else ''}" \
-                f"{bits}bit_" \
+                f"{tones}tone_" \
                 f"{quantize_method}_"  \
 
     quantized_image.save(new_file + "quantized.png")
@@ -71,14 +72,21 @@ output:
     return True
 
 
-def choose_quantization_method(quantize_method, levels, img, gray):
-
+def choose_quantization_method(quantize_method, tones, img, gray):
     # https://web.cs.wpi.edu/~matt/courses/cs563/talks/color_quant/CQindex.html
+
+    bits = log(tones, 2)
+    if bits != int(bits) or bits < 1:
+        raise ValueError
+    else:
+        bits = int(bits)
+
     match quantize_method:
         case "uniform":
-
-            if not gray: levels = int(log(levels, 3))
-            levels -= 1  # accounting for 0 condition
+            # set number of levels per r/g/b
+            if gray:    levels = tones - 1  # accounting for 0 condition
+            else:       levels = bits / 3
+            if levels < 1: raise ValueError
 
             def quantize_uniform(r, g, b):
                 return (
@@ -90,7 +98,7 @@ def choose_quantization_method(quantize_method, levels, img, gray):
             return quantize_uniform
 
         case "median_cut":
-            bits = int(log(levels, 2))
+            # bits become the number of cuts
             colors = palette(img, bits)
 
             def quantize_median_cut(r, g, b):
