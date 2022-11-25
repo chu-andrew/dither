@@ -1,10 +1,11 @@
-import numpy
+import numpy as np
 from PIL import Image
-from math import log
+from math import log, sqrt
 from tqdm import tqdm
 import click
 
 from dither import dither
+from median_cut import palette
 
 
 @click.command()
@@ -14,13 +15,13 @@ from dither import dither
 @click.option('--median_cut', 'quantize_method', flag_value='median_cut')
 @click.option('--gray', is_flag=True, default=False, help='convert image to grayscale before processing')
 def main(image_file, bits, quantize_method, gray):
-    # choose quantization method
-    quantize = choose_quantization_method(quantize_method, bits)
-
     # initialize images and maps
     input_image = Image.open(image_file)
     width, height = input_image.size
     channels = len(input_image.getbands())
+
+    if gray:
+        input_image = Image.open(grayscale_image(input_image, image_file))
 
     quantized_image = input_image.copy()
     dithered_image = input_image.copy()
@@ -28,31 +29,32 @@ def main(image_file, bits, quantize_method, gray):
     quantized_map = quantized_image.load()
     dithered_map = dithered_image.load()
 
-    if gray: quantized_map, dithered_map = grayscale_image(input_image, quantized_map, dithered_map)
+    # choose quantization method
+    try:
+        quantize = choose_quantization_method(quantize_method, bits, input_image, gray)
+    except ValueError:
+        print("Please enter a valid number of color levels.")
+        return
 
     # process images: Floyd-Steinberg dithering
     for j in tqdm(range(height)):
         for i in range(width):
 
-            # populate a quantized map
             if quantized_map[i, j] is not None:
-                if channels > 3:
-                    r, g, b, *_ = quantized_map[i, j]
-                else:
-                    r, g, b     = quantized_map[i, j]
-                quantized_map[i, j] = quantize(r), quantize(g), quantize(b)
+                r, g, b = quantized_map[i, j][:3]
+                quantized_map[i, j] = quantize(r, g, b)
 
             # populate dithered map
             dithered_map = dither(i, j, dithered_map, quantize, (width, height, channels))
 
     # save images and output stats
-    # TODO https://stackoverflow.com/questions/73242236/image-colors-changed-after-saving-with-pil
+    # https://stackoverflow.com/questions/73242236/image-colors-changed-after-saving-with-pil
     # https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html
-    ext = "." + image_file.split('.')[-1]
-    stem = str(image_file.replace(ext, ""))
-    new_file = f"{stem}_" \
-               f"{bits}bit_" \
-               f"{'gray_' if gray else ''}"
+    stem = get_path(image_file)
+    new_file =  f"{stem}_" \
+                f"{'gray_' if gray else ''}" \
+                f"{bits}bit_" \
+                f"{quantize_method}_"  \
 
     quantized_image.save(new_file + "quantized.png")
     dithered_image.save(new_file + "dithered.png")
@@ -69,37 +71,61 @@ output:
     return True
 
 
-def grayscale_image(input_image, quantized_map, dithered_map):
-    width, height = input_image.size
-    for j in range(height):
-        for i in range(width):
-            r, g, b = input_image.getpixel((i, j))
-            grayscale = int(0.299 * r + 0.587 * g + 0.114 * b)
+def choose_quantization_method(quantize_method, levels, img, gray):
 
-            gray_pixel = grayscale, grayscale, grayscale
-            quantized_map[i, j] = gray_pixel
-            dithered_map[i, j] = gray_pixel
-
-    return quantized_map, dithered_map
-
-
-def choose_quantization_method(quantize_method,bits):
     # https://web.cs.wpi.edu/~matt/courses/cs563/talks/color_quant/CQindex.html
     match quantize_method:
         case "uniform":
-            bits_per_channel = log(bits) / (3 * log(2))
-            if bits_per_channel != int(round(bits_per_channel)) or bits_per_channel < 1:
-                print()  # TODO error message for incorrect bits option
-                return False
-            else:
-                bits_per_channel = int(round(bits_per_channel))
-            levels = (1 << bits_per_channel) - 1
 
-            # bits = (2 ** bits_per_channel) ** 3
+            if not gray: levels = int(log(levels, 3))
+            levels -= 1  # accounting for 0 condition
 
-            return lambda x: round(round(x / 255 * levels) / levels * 255)
+            def quantize_uniform(r, g, b):
+                return (
+                    round(round(r / 255 * levels) / levels * 255),
+                    round(round(g / 255 * levels) / levels * 255),
+                    round(round(b / 255 * levels) / levels * 255)
+                )
+
+            return quantize_uniform
+
         case "median_cut":
-            raise NotImplementedError
+            bits = int(log(levels, 2))
+            colors = palette(img, bits)
+
+            def quantize_median_cut(r, g, b):
+                distances = []
+                for R, G, B in colors:
+                    distance = sqrt((R - r)**2 + (G - g)**2 + (B - b)**2)
+                    distances.append(distance)
+                return colors[distances.index(min(distances))]
+
+            return quantize_median_cut
+
+
+def grayscale_image(input_image, image_file):
+    width, height = input_image.size
+
+    gray_image = input_image.copy()
+    gray_map = gray_image.load()
+
+    for j in range(height):
+        for i in range(width):
+            r, g, b = input_image.getpixel((i, j))[:3]
+            grayscale = int(0.299 * r + 0.587 * g + 0.114 * b)
+
+            gray_map[i, j] = grayscale, grayscale, grayscale
+
+    new_filename = get_path(image_file) + "_gray.png"
+    gray_image.save(get_path(image_file) + "_gray.png")
+
+    return new_filename
+
+
+def get_path(filename):
+    ext = "." + filename.split('.')[-1]
+    stem = str(filename.replace(ext, ""))
+    return stem
 
 
 if __name__ == '__main__':

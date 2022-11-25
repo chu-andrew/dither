@@ -3,7 +3,9 @@ def dither(i, j, image_map, quant_func, info):
 
     # quantize and assign
     r, g, b = image_map[i, j][:3]
-    qr, qg, qb = quant_func(r), quant_func(g), quant_func(b)
+    # print(r, g, b)
+    a = quant_func(r, g, b)
+    qr, qg, qb = quant_func(r, g, b)
     image_map[i, j] = qr, qg, qb
 
     # distribute error to neighbors
