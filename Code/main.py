@@ -34,6 +34,13 @@ def main(image_file, tones, quantize_method, gray):
         quantize = choose_quantization_method(quantize_method, tones, input_image, gray)
     except ValueError:
         print("Please enter a valid number of tones.")
+        if quantize_method == "uniform":
+            if gray:
+                print("Uniform: Tones must be greater than 1.")
+            else:
+                print("Uniform: Tones = (tones per channel)^3")
+        elif quantize_method == "median_cut":
+            print("Median Cut: Tones must be a power of 2.")
         return
 
     # process images: Floyd-Steinberg dithering

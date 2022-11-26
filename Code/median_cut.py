@@ -22,7 +22,7 @@ def palette(img, cuts):
         rgb = tuple(round(pixel) for pixel in rgb.tolist())
         palette.append(rgb)
 
-    print(palette)
+    # print(palette)
     return palette
 
 
