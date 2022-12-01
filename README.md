@@ -34,6 +34,10 @@ Options:
 
 PIP Requirements:
 
+```commandline
+pip install Pillow numpy click tqdm
+```
+
 - Pillow
 - numpy
 - click
