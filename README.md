@@ -16,7 +16,13 @@ Options:
     --gray [convert image to grayscale before processing]
     --help
 
-| Original Image                          | Grayscaled Image                             |
+### Example Images
+
+Image: ["Last train." by Haley Truong from unsplash.com](https://unsplash.com/photos/KB6liFYE3ao)
+
+Best viewed in full resolution.
+
+| Original Image                          | Grayscale Image                              |
 |-----------------------------------------|----------------------------------------------|
 | ![image](/Data/test_images/subway.jpg/) | ![image](/Data/test_images/subway_gray.png/) |
 
@@ -32,7 +38,7 @@ Options:
 |--------------------------------------------------------------------|-------------------------------------------------------------------|
 | ![image](/Data/test_images/subway_8tone_median_cut_quantized.png/) | ![image](/Data/test_images/subway_8tone_median_cut_dithered.png/) |
 
-PIP Requirements:
+### PIP Requirements:
 
 ```commandline
 pip install Pillow numpy click tqdm
