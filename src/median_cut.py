@@ -1,8 +1,4 @@
 import numpy as np
-import pickle
-from math import log
-
-from PIL.Image import Image
 
 
 def palette(img, cuts):

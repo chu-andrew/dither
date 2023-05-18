@@ -24,27 +24,16 @@ Best viewed in full resolution.
 
 | Original Image                          | Grayscale Image                              |
 |-----------------------------------------|----------------------------------------------|
-| ![image](/Data/test_images/subway.jpg/) | ![image](/Data/test_images/subway_gray.png/) |
+| ![image](/data/test_images/subway.jpg/) | ![image](/data/test_images/subway_gray.png/) |
 
 | Grayscale Uniform Quantized 2-tone                                   | Grayscale Uniform Quantized 2-tone Dithered                         |
 |----------------------------------------------------------------------|---------------------------------------------------------------------|
-| ![image](/Data/test_images/subway_gray_2tone_uniform_quantized.png/) | ![image](/Data/test_images/subway_gray_2tone_uniform_dithered.png/) |
+| ![image](/data/test_images/subway_gray_2tone_uniform_quantized.png/) | ![image](/data/test_images/subway_gray_2tone_uniform_dithered.png/) |
 
 | Uniform Quantized 8-tone                                        | Uniform Quantized 8-tone Dithered                                |
 |-----------------------------------------------------------------|------------------------------------------------------------------|
-| ![image](/Data/test_images/subway_8tone_uniform_quantized.png/) | ![image](/Data/test_images/subway_8tone_uniform_dithered.png/)   |
+| ![image](/data/test_images/subway_8tone_uniform_quantized.png/) | ![image](/data/test_images/subway_8tone_uniform_dithered.png/)   |
 
 | Median-Cut Quantized 8-tone                                        | Median-Cut Quantized 8-tone Dithered                              |
 |--------------------------------------------------------------------|-------------------------------------------------------------------|
-| ![image](/Data/test_images/subway_8tone_median_cut_quantized.png/) | ![image](/Data/test_images/subway_8tone_median_cut_dithered.png/) |
-
-### PIP Requirements:
-
-```commandline
-pip install Pillow numpy click tqdm
-```
-
-- Pillow
-- numpy
-- click
-- tqdm
+| ![image](/data/test_images/subway_8tone_median_cut_quantized.png/) | ![image](/data/test_images/subway_8tone_median_cut_dithered.png/) |
